@@ -2,13 +2,13 @@ from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.response import Response
 
-from .models import RutaTrekking
-from .serializers import RutaTrekkingSerializer
+from .models import Ruta, Usuario
+from .serializers import RutaSerializer
 
 
-class RutaTrekkingViewSet(viewsets.ModelViewSet):
-    queryset = RutaTrekking.objects.all()
-    serializer_class = RutaTrekkingSerializer
+class RutaViewSet(viewsets.ModelViewSet):
+    queryset = Ruta.objects.all()
+    serializer_class = RutaSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -16,3 +16,10 @@ class RutaTrekkingViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        if self.request.user.is_anonymous:
+            default_user = Usuario.objects.get(username='default')
+            serializer.save(usuario=default_user)
+        else:
+            serializer.save(usuario=self.request.user)
