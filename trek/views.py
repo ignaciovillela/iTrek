@@ -1,5 +1,4 @@
-from rest_framework import status
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 
 from .models import Ruta, Usuario
@@ -23,3 +22,12 @@ class RutaViewSet(viewsets.ModelViewSet):
             serializer.save(usuario=default_user)
         else:
             serializer.save(usuario=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        ruta = self.get_object()
+
+        ruta.puntos.all().delete()
+
+        ruta.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
