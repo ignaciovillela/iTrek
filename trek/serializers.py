@@ -1,15 +1,56 @@
 from rest_framework import serializers
-from .models import Usuario, Ruta, Punto
+
+from trek.fields import Base64ImageField
+from .models import Punto, PuntoInteres, Ruta, Usuario
+
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ['id', 'username', 'email', 'biografia', 'imagen_perfil']
 
+
+class PuntoInteresSerializer(serializers.ModelSerializer):
+    imagen = Base64ImageField(required=False)
+
+    class Meta:
+        model = PuntoInteres
+        fields = ['descripcion', 'imagen']
+
+
 class PuntoSerializer(serializers.ModelSerializer):
+    interes = PuntoInteresSerializer(required=False)
+
     class Meta:
         model = Punto
-        fields = ['latitud', 'longitud', 'orden']
+        fields = ['latitud', 'longitud', 'orden', 'interes']
+
+    def create(self, validated_data):
+        interes_data = validated_data.pop('interes', None)
+        punto = Punto.objects.create(**validated_data)
+
+        if interes_data:
+            PuntoInteres.objects.create(punto=punto, **interes_data)
+
+        return punto
+
+    def update(self, instance, validated_data):
+        interes_data = validated_data.pop('interes', None)
+
+        instance.latitud = validated_data.get('latitud', instance.latitud)
+        instance.longitud = validated_data.get('longitud', instance.longitud)
+        instance.orden = validated_data.get('orden', instance.orden)
+        instance.save()
+
+        if interes_data:
+            if hasattr(instance, 'interes'):
+                instance.interes.descripcion = interes_data.get('descripcion', instance.interes.descripcion)
+                instance.interes.save()
+            else:
+                PuntoInteres.objects.create(punto=instance, **interes_data)
+
+        return instance
+
 
 class RutaSerializer(serializers.ModelSerializer):
     usuario = UsuarioSerializer(read_only=True)
@@ -24,5 +65,8 @@ class RutaSerializer(serializers.ModelSerializer):
         puntos_data = validated_data.pop('puntos')
         ruta = Ruta.objects.create(**validated_data)
         for punto_data in puntos_data:
-            Punto.objects.create(ruta=ruta, **punto_data)
+            interes_data = punto_data.pop('interes', None)
+            punto = Punto.objects.create(ruta=ruta, **punto_data)
+            if interes_data:
+                PuntoInteres.objects.create(punto=punto, **interes_data)
         return ruta

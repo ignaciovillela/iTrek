@@ -17,6 +17,9 @@ class RutaViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         if self.request.user.is_anonymous:
             default_user = Usuario.objects.get(username='default')

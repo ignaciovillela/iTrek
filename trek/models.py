@@ -36,3 +36,9 @@ class Punto(models.Model):
 
     def __str__(self):
         return f"Punto {self.orden} - Lat: {self.latitud}, Lon: {self.longitud}"
+
+
+class PuntoInteres(models.Model):
+    punto = models.OneToOneField(Punto, on_delete=models.CASCADE, related_name='interes')
+    descripcion = models.TextField(blank=True)
+    imagen = models.ImageField(upload_to='imagenes/', blank=True, null=True)
