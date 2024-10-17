@@ -60,9 +60,27 @@ class RutaSerializer(serializers.ModelSerializer):
         model = Ruta
         fields = ['id', 'nombre', 'descripcion', 'dificultad', 'puntos',
                   'creado_en', 'distancia_km', 'tiempo_estimado_horas', 'usuario']
+        extra_kwargs = {
+            'nombre': {'allow_blank': True, 'required': False},
+            'descripcion': {'allow_blank': True, 'required': False},
+            'dificultad': {'allow_blank': True, 'required': False},
+            'distancia_km': {'required': False},
+            'tiempo_estimado_horas': {'required': False},
+        }
 
     def create(self, validated_data):
-        puntos_data = validated_data.pop('puntos')
+        puntos_data = validated_data.pop('puntos', [])
+
+        if not validated_data.get('nombre', '').strip():
+            validated_data['nombre'] = f"Ruta sin nombre {Ruta.objects.count() + 1}"
+        if not validated_data.get('descripcion', '').strip():
+            validated_data['descripcion'] = "Descripción no proporcionada"
+        if not validated_data.get('dificultad', '').strip():
+            validated_data['dificultad'] = 'facil'
+
+        validated_data['distancia_km'] = validated_data.get('distancia_km', 1.0)
+        validated_data['tiempo_estimado_horas'] = validated_data.get('tiempo_estimado_horas', 1.0)
+
         ruta = Ruta.objects.create(**validated_data)
         for punto_data in puntos_data:
             interes_data = punto_data.pop('interes', None)
