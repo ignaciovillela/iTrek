@@ -1,12 +1,24 @@
 from django.contrib import admin
-from .models import Ruta, Punto
 from django.utils.safestring import mark_safe
+
+from .models import Punto, Ruta
+
 
 class PuntoInline(admin.TabularInline):
     model = Punto
-    extra = 1
-    fields = ['latitud', 'longitud', 'orden']
-    classes = ['collapse']
+    extra = 0
+    fields = ['latitud', 'longitud', 'descripcion', 'imagen']
+    readonly_fields = ('descripcion', 'imagen')
+
+    @staticmethod
+    def descripcion(obj):
+        return obj.interes.descripcion
+
+    @staticmethod
+    def imagen(obj):
+        if obj and obj.interes and obj.interes.imagen:
+            return mark_safe(f'<a href="{obj.interes.imagen.url}"><img src="{obj.interes.imagen.url}" width="100" height="100" /></a>')
+        return 'No hay imagen'
 
 class RutaAdmin(admin.ModelAdmin):
     inlines = [PuntoInline]
@@ -19,7 +31,7 @@ class RutaAdmin(admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        if obj:
+        if obj and obj.puntos.exists():
             puntos_js = [
                 {
                     "lat": punto.latitud,
@@ -29,12 +41,13 @@ class RutaAdmin(admin.ModelAdmin):
                 }
                 for punto in obj.puntos.all()
             ]
-            puntos_js_str = str(puntos_js).replace("None", "null").replace("'", '"')  # Convertir a JSON válido y manejar None
+            puntos_js_str = str(puntos_js).replace("None", "null").replace("'", '"')
+            first_punto = obj.puntos.first()
 
             form.base_fields['descripcion'].help_text = mark_safe(f"""
             <div id="mapid" style="height: 400px;"></div>
             <script>
-                var map = L.map('mapid').setView([{obj.puntos.first().latitud}, {obj.puntos.first().longitud}], 13);
+                var map = L.map('mapid').setView([{first_punto.latitud}, {first_punto.longitud}], 13);
                 
                 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
                     maxZoom: 18,
@@ -42,7 +55,6 @@ class RutaAdmin(admin.ModelAdmin):
                 }}).addTo(map);
             
                 var points = {puntos_js_str};
-            
                 var latlngs = [];
                 points.forEach(function(p) {{
                     latlngs.push([p.lat, p.lng]);

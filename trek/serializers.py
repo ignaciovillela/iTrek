@@ -1,13 +1,21 @@
 from rest_framework import serializers
 
 from trek.fields import Base64ImageField
-from .models import Punto, PuntoInteres, Ruta, Usuario
+from .models import Punto, PuntoInteres, Ruta, RutaCompartida, Usuario
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ['id', 'username', 'email', 'biografia', 'imagen_perfil']
+
+
+class SearchUsuarioSerializer(serializers.ModelSerializer):
+    fullname = serializers.CharField()
+
+    class Meta:
+        model = Usuario
+        fields = ['id', 'username', 'fullname', 'imagen_perfil']
 
 
 class PuntoInteresSerializer(serializers.ModelSerializer):
@@ -52,14 +60,22 @@ class PuntoSerializer(serializers.ModelSerializer):
         return instance
 
 
-class RutaSerializer(serializers.ModelSerializer):
+class RutaBaseSerializer(serializers.ModelSerializer):
     usuario = UsuarioSerializer(read_only=True)
-    puntos = PuntoSerializer(many=True)
 
     class Meta:
         model = Ruta
-        fields = ['id', 'nombre', 'descripcion', 'dificultad', 'puntos',
-                  'creado_en', 'distancia_km', 'tiempo_estimado_horas', 'usuario']
+        fields = [
+            'id', 'nombre', 'descripcion', 'dificultad', 'creado_en',
+            'distancia_km', 'tiempo_estimado_horas', 'usuario', 'publica',
+        ]
+
+
+class RutaSerializer(RutaBaseSerializer):
+    puntos = PuntoSerializer(many=True)
+
+    class Meta(RutaBaseSerializer.Meta):
+        fields = RutaBaseSerializer.Meta.fields + ['puntos']
         extra_kwargs = {
             'nombre': {'allow_blank': True, 'required': False},
             'descripcion': {'allow_blank': True, 'required': False},
@@ -70,7 +86,12 @@ class RutaSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         puntos_data = validated_data.pop('puntos', [])
+        ruta = self.create_ruta(validated_data)
+        self.create_puntos(ruta, puntos_data)
+        return ruta
 
+    @staticmethod
+    def create_ruta(validated_data):
         if not validated_data.get('nombre', '').strip():
             validated_data['nombre'] = f"Ruta sin nombre {Ruta.objects.count() + 1}"
         if not validated_data.get('descripcion', '').strip():
@@ -81,10 +102,30 @@ class RutaSerializer(serializers.ModelSerializer):
         validated_data['distancia_km'] = validated_data.get('distancia_km', 1.0)
         validated_data['tiempo_estimado_horas'] = validated_data.get('tiempo_estimado_horas', 1.0)
 
-        ruta = Ruta.objects.create(**validated_data)
+        return Ruta.objects.create(**validated_data)
+
+    @staticmethod
+    def create_puntos(ruta, puntos_data):
         for punto_data in puntos_data:
             interes_data = punto_data.pop('interes', None)
             punto = Punto.objects.create(ruta=ruta, **punto_data)
             if interes_data:
                 PuntoInteres.objects.create(punto=punto, **interes_data)
-        return ruta
+
+
+class RutaCompartidaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RutaCompartida
+        fields = ['ruta', 'usuario']
+
+    def validate(self, data):
+        ruta = data.get('ruta')
+        usuario = data.get('usuario')
+
+        if ruta.usuario == usuario:
+            raise serializers.ValidationError("No puedes compartir la ruta contigo mismo.")
+
+        if RutaCompartida.objects.filter(ruta=ruta, usuario=usuario).exists():
+            raise serializers.ValidationError("La ruta ya ha sido compartida con este usuario.")
+
+        return data
