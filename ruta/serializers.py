@@ -1,21 +1,8 @@
 from rest_framework import serializers
 
 from trek.fields import Base64ImageField
-from .models import Punto, PuntoInteres, Ruta, RutaCompartida, Usuario
-
-
-class UsuarioSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Usuario
-        fields = ['id', 'username', 'email', 'biografia', 'imagen_perfil']
-
-
-class SearchUsuarioSerializer(serializers.ModelSerializer):
-    fullname = serializers.CharField()
-
-    class Meta:
-        model = Usuario
-        fields = ['id', 'username', 'fullname', 'imagen_perfil']
+from user.serializers import UsuarioSerializer
+from .models import Punto, PuntoInteres, Ruta, RutaCompartida
 
 
 class PuntoInteresSerializer(serializers.ModelSerializer):

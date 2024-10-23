@@ -1,74 +1,28 @@
-from django.contrib.auth import authenticate
-from django.db.models import Q, Value
-from django.db.models.functions import Concat
-from rest_framework import status, viewsets
-from rest_framework.authtoken.models import Token
+from django.db.models import Q
+from rest_framework import status
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from user.models import Usuario
 from .models import Ruta
-from .models import Usuario
-from .serializers import (
-    RutaBaseSerializer, RutaSerializer,
-)
-from .serializers import SearchUsuarioSerializer
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def login_view(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-
-    user = authenticate(username=username, password=password)
-    if user:
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key}, status=status.HTTP_200_OK)
-    return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def checklogin_view(request):
-    user = request.user
-    return Response({'message': 'User is authenticated', 'username': user.username})
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def buscar_usuario(request):
-    query = request.query_params.get('q', None)
-
-    if not query:
-        return Response({'error': 'Se requiere un parámetro de búsqueda.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    total_characters = len(query.replace(" ", ""))
-
-    if total_characters < 3:
-        return Response({'error': 'La búsqueda debe tener al menos 3 letras en total.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    search_terms = query.split()
-
-    query_filter = Q()
-    for term in search_terms:
-        query_filter |= Q(username__icontains=term) | Q(first_name__icontains=term) | Q(last_name__icontains=term)
-
-    usuarios = Usuario.objects.filter(query_filter).exclude(id=request.user.id).annotate(
-        fullname=Concat('first_name', Value(' '), 'last_name')
-    )
-    if not request.user.is_staff:
-        usuarios = usuarios.exclude(is_staff=True)
-    if not request.user.is_superuser:
-        usuarios = usuarios.exclude(is_superuser=True)
-
-    serializer = SearchUsuarioSerializer(usuarios, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+from .serializers import RutaBaseSerializer, RutaSerializer
 
 
 class RutaViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet que maneja la gestión de rutas.
+
+    - GET    /routes/                         : Listar todas las rutas visibles al usuario autenticado.
+    - POST   /routes/                         : Crear una nueva ruta.
+    - GET    /routes/{id}/                    : Obtener los detalles de una ruta específica.
+    - PATCH  /routes/{id}/                    : Actualizar una ruta específica.
+    - DELETE /routes/{id}/                    : Eliminar una ruta específica.
+    - POST   /routes/{id}/share/{usuario_id}/ : Compartir una ruta con un usuario específico.
+    - DELETE /routes/{id}/share/{usuario_id}/ : Dejar de compartir una ruta con un usuario específico.
+    """
+
     queryset = Ruta.objects.all()
     list_serializer_class = RutaBaseSerializer
     serializer_class = RutaSerializer
@@ -96,7 +50,7 @@ class RutaViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
 
-    @action(detail=True, methods=['post', 'delete'], url_path='compartir/(?P<usuario_id>\d+)')
+    @action(detail=True, methods=['post', 'delete'], url_path='share/(?P<usuario_id>\d+)')
     def compartir(self, request, pk=None, usuario_id=None):
         ruta = self.get_object()
         is_share = request.method == 'POST'

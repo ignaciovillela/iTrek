@@ -22,6 +22,7 @@ class PuntoInline(admin.TabularInline):
 
 class RutaAdmin(admin.ModelAdmin):
     inlines = [PuntoInline]
+    list_filter = ('usuario',)
 
     class Media:
         css = {

@@ -2,8 +2,8 @@ from django.db import migrations
 
 
 def create_ruta_san_cristobal(apps, schema):
-    Ruta = apps.get_model('trek', 'Ruta')
-    Punto = apps.get_model('trek', 'Punto')
+    Ruta = apps.get_model('ruta.Ruta')
+    Punto = apps.get_model('ruta.Punto')
 
     ruta = Ruta.objects.create(
         nombre="Ruta por el Cerro San Cristóbal",
@@ -44,8 +44,8 @@ def create_ruta_san_cristobal(apps, schema):
 
 
 def delete_ruta_san_cristobal(apps, schema_editor):
-    Ruta = apps.get_model('trek', 'Ruta')
-    Punto = apps.get_model('trek', 'Punto')
+    Ruta = apps.get_model('ruta.Ruta')
+    Punto = apps.get_model('ruta.Punto')
 
     ruta = Ruta.objects.filter(nombre="Ruta por el Cerro San Cristóbal").first()
 
@@ -57,7 +57,7 @@ def delete_ruta_san_cristobal(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('trek', '0002_usuario'),
+        ('ruta', '0001_initial'),
     ]
 
     operations = [
