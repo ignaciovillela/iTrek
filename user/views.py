@@ -2,10 +2,11 @@ from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from trek.permissions import AllowOnlyAnonymous
 from .models import Usuario
 from .serializers import SearchUsuarioSerializer, UsuarioSerializer
 
@@ -23,7 +24,7 @@ class UserViewSet(ViewSet):
 
     def get_permissions(self):
         if self.action in ['create_user']:
-            return [AllowAny()]
+            return [AllowOnlyAnonymous()]
         return [IsAuthenticated()]
 
     @action(detail=False, methods=['post'], url_path='create')
@@ -34,7 +35,7 @@ class UserViewSet(ViewSet):
         serializer = UsuarioSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Usuario creado exitosamente.'}, status=status.HTTP_201_CREATED)
+            return Response({**serializer.data, 'message': 'Usuario creado exitosamente.'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['put'], url_path='update-profile')
@@ -45,7 +46,7 @@ class UserViewSet(ViewSet):
         serializer = UsuarioSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({**serializer.data, 'message': 'Perfil actualizado correctamente.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['put'], url_path='change-password')

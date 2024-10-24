@@ -2,10 +2,11 @@ from django.contrib.auth import authenticate
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from trek.permissions import AllowOnlyAnonymous
 from user.serializers import UsuarioSerializer
 
 
@@ -20,7 +21,7 @@ class AuthViewSet(ViewSet):
 
     def get_permissions(self):
         if self.action in ['login']:
-            return [AllowAny()]
+            return [AllowOnlyAnonymous()]
         return [IsAuthenticated()]
 
     @action(detail=False, methods=['post'], url_path='login')
