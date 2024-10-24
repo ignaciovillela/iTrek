@@ -6,6 +6,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from user.serializers import UsuarioSerializer
+
 
 class AuthViewSet(ViewSet):
     """
@@ -24,7 +26,7 @@ class AuthViewSet(ViewSet):
     @action(detail=False, methods=['post'], url_path='login')
     def login(self, request):
         """
-        Autentica al usuario y devuelve un token junto con los detalles del usuario.
+        Autentíca al usuario y devuelve un token junto con los detalles del usuario.
         """
         username = request.data.get('username')
         password = request.data.get('password')
@@ -34,10 +36,11 @@ class AuthViewSet(ViewSet):
 
         user = authenticate(username=username, password=password)
         if user:
+            user_data = UsuarioSerializer(user).data
             token, _ = Token.objects.get_or_create(user=user)
             return Response({
+                **user_data,
                 'token': token.key,
-                'username': user.username
             }, status=status.HTTP_200_OK)
         return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -54,4 +57,5 @@ class AuthViewSet(ViewSet):
         """
         Verifica si el usuario está autenticado.
         """
-        return Response({'message': 'User is authenticated', 'username': request.user.username}, status=status.HTTP_200_OK)
+        user_data = UsuarioSerializer(request.user).data
+        return Response({**user_data, 'message': 'User is authenticated'}, status=status.HTTP_200_OK)
