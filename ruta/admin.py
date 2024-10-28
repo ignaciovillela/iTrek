@@ -1,7 +1,29 @@
+from django import forms
 from django.contrib import admin
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.safestring import mark_safe
 
-from .models import Punto, Ruta
+from user.models import Usuario
+from .models import Punto, Ruta, RutaCompartida
+
+
+class RutaForm(forms.ModelForm):
+    class Meta:
+        model = Ruta
+        fields = '__all__'
+
+    # Definir el widget para el campo ManyToMany
+    compartida_con = forms.ModelMultipleChoiceField(
+        queryset=Usuario.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple('Usuarios', is_stacked=False)
+    )
+
+    class Media:
+        css = {
+            'all': ('admin/css/widgets.css',),
+        }
+        js = ('admin/js/vendor/jquery/jquery.js', 'admin/js/jquery.init.js', 'admin/js/actions.js')
 
 
 class PuntoInline(admin.TabularInline):
@@ -20,9 +42,12 @@ class PuntoInline(admin.TabularInline):
             return mark_safe(f'<a href="{obj.interes.imagen.url}"><img src="{obj.interes.imagen.url}" width="100" height="100" /></a>')
         return 'No hay imagen'
 
+
 class RutaAdmin(admin.ModelAdmin):
     inlines = [PuntoInline]
-    list_filter = ('usuario',)
+    form = RutaForm
+    list_display = ('nombre', 'usuario', 'dificultad', 'creado_en')
+    list_filter = ('dificultad', 'usuario')
 
     class Media:
         css = {
@@ -86,5 +111,24 @@ class RutaAdmin(admin.ModelAdmin):
             </script>
             """)
         return form
+
+
+class RutaCompartidaForm(forms.ModelForm):
+    class Meta:
+        model = RutaCompartida
+        fields = '__all__'
+
+    # En el formulario de RutaCompartida, podemos mostrar el campo ManyToMany como un campo de selección filtrada
+    usuario = forms.ModelChoiceField(queryset=Usuario.objects.all())
+    ruta = forms.ModelChoiceField(queryset=Ruta.objects.all())
+
+
+@admin.register(RutaCompartida)
+class RutaCompartidaAdmin(admin.ModelAdmin):
+    form = RutaCompartidaForm
+    list_display = ('ruta', 'usuario')  # Mostramos los campos principales en la lista de admin
+    search_fields = ('ruta__nombre', 'usuario__username')  # Buscamos por el nombre de la ruta o el nombre del usuario
+    list_filter = ('ruta', 'usuario')  # Filtros por ruta y usuario
+
 
 admin.site.register(Ruta, RutaAdmin)
