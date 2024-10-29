@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.contrib import admin
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -67,7 +69,7 @@ class RutaAdmin(admin.ModelAdmin):
                 }
                 for punto in obj.puntos.all()
             ]
-            puntos_js_str = str(puntos_js).replace("None", "null").replace("'", '"')
+            puntos_js_str = json.dumps(puntos_js)
             first_punto = obj.puntos.first()
 
             form.base_fields['descripcion'].help_text = mark_safe(f"""
