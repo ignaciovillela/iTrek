@@ -1,9 +1,9 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 from trek.fields import Base64ImageField
-from .models import Usuario
 
 User = get_user_model()
 
@@ -24,25 +24,34 @@ class UsuarioSerializer(ImageMixin, serializers.Serializer):
     biografia = serializers.CharField(required=False, allow_blank=True)
     imagen_perfil = Base64ImageField(required=False, allow_null=True)
 
-    def validate_unique(self, *args, validation_error=None, **kwargs):
-        if User.objects.filter(*args, **kwargs).exists():
-            raise serializers.ValidationError(validation_error)
-
-    def validate(self, data):
+    def validate_username(self, value):
         user = self.instance
-
-        id_filter = {}
+        queryset = User.objects.filter(username=value)
         if user:
-            id_filter['id'] = user.id
-        email = data.get('email')
-        self.validate_unique(email=email, validation_error={'email': 'Este correo electrónico ya está en uso.'})
-        username = data.get('username')
-        self.validate_unique(username=username, validation_error={'username': 'Este nombre de usuario ya está en uso.'})
+            queryset = queryset.exclude(id=user.id)
+        if queryset.exists():
+            raise serializers.ValidationError('Este nombre de usuario ya está en uso.')
+        return value
 
-        return data
+    def validate_email(self, value):
+        user = self.instance
+        queryset = User.objects.filter(email=value)
+        if user:
+            queryset = queryset.exclude(id=user.id)
+        if queryset.exists():
+            raise serializers.ValidationError('Este correo electrónico ya está en uso.')
+        return value
+
+    def validate_password(self, value):
+        user = self.instance
+        try:
+            validate_password(value, user=user)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages[0])
+        return value
 
     def create(self, validated_data):
-        return Usuario.objects.create_user(
+        return User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email'),
             password=validated_data['password'],
@@ -68,5 +77,5 @@ class SearchUsuarioSerializer(ImageMixin, serializers.ModelSerializer):
     fullname = serializers.CharField()
 
     class Meta:
-        model = Usuario
+        model = User
         fields = ['id', 'username', 'fullname', 'imagen_perfil']
