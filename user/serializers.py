@@ -11,10 +11,7 @@ User = get_user_model()
 class ImageMixin:
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        if instance.imagen_perfil:
-            representation['imagen_perfil'] = instance.imagen_perfil.url
-        else:
-            representation['imagen_perfil'] = f'{settings.STATIC_URL}default_profile.jpg'
+        representation['imagen_perfil'] = instance.imagen_perfil_url
         return representation
 
 

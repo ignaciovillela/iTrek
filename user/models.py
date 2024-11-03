@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -14,3 +15,9 @@ class Usuario(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    @property
+    def imagen_perfil_url(self):
+        if self.imagen_perfil:
+            return self.imagen_perfil.url
+        return f'{settings.STATIC_URL}default_profile.jpg'
