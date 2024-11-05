@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from trek.permissions import AllowOnlyAnonymous
+from user.models import Usuario
 from user.serializers import UsuarioSerializer
 
 
@@ -27,7 +28,7 @@ class AuthViewSet(ViewSet):
     @action(detail=False, methods=['post'], url_path='login')
     def login(self, request):
         """
-        Autentíca al usuario y devuelve un token junto con los detalles del usuario.
+        Autentica al usuario y devuelve un token junto con los detalles del usuario.
         """
         username = request.data.get('username')
         password = request.data.get('password')
@@ -35,14 +36,21 @@ class AuthViewSet(ViewSet):
         if not username or not password:
             return Response({'error': 'Debe proporcionar username y password.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = authenticate(username=username, password=password)
-        if user:
+        try:
+            # Busca el usuario ignorando mayúsculas y minúsculas
+            user = Usuario.objects.get(username__iexact=username)
+        except Usuario.DoesNotExist:
+            return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verifica si la contraseña es correcta
+        if check_password(password, user.password):
             user_data = UsuarioSerializer(user).data
             token, _ = Token.objects.get_or_create(user=user)
             return Response({
                 **user_data,
                 'token': token.key,
             }, status=status.HTTP_200_OK)
+
         return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'], url_path='logout')

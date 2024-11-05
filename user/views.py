@@ -1,15 +1,20 @@
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from trek.email import send_confirmation_email, send_welcome_email
+from trek.email import (
+    EmailType, get_email_body, send_confirmation_email,
+    send_welcome_email,
+)
 from trek.permissions import AllowOnlyAnonymous
 from .models import Usuario
 from .serializers import SearchUsuarioSerializer, UsuarioSerializer
@@ -29,9 +34,18 @@ class UserViewSet(ViewSet):
 
     def get_permissions(self):
         print(self.action)
-        if self.action in ['create_user', 'confirm_email']:
+        if self.action in ['create_user', 'confirm_email', 'get_email']:
             return [AllowOnlyAnonymous()]
         return [IsAuthenticated()]
+
+    @action(detail=False, methods=['get'], url_path='email/(?P<email_type>\w+)')
+    def get_email(self, request, email_type):
+        email_type = {
+            'confirm_email': EmailType.CONFIRM_EMAIL,
+            'welcome': EmailType.WELCOME,
+            'password_reset': EmailType.PASSWORD_RESET,
+        }[email_type]
+        return HttpResponse(get_email_body(self.request.user, email_type, self.request, **self.request.GET))
 
     @action(detail=False, methods=['post'], url_path='create')
     def create_user(self, request):
@@ -41,7 +55,7 @@ class UserViewSet(ViewSet):
         serializer = UsuarioSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            send_confirmation_email(user)
+            send_confirmation_email(user, request)
             return Response({**serializer.data, 'message': 'Usuario creado. Revisa tu email para terminar tu registro'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -50,6 +64,9 @@ class UserViewSet(ViewSet):
         """
         Confirma la dirección de correo electrónico del usuario utilizando el token de confirmación y renderiza una página HTML.
         """
+
+        is_json = request.query_params.get('json') == 'true'
+
         signer = TimestampSigner()
         try:
             # Decodifica y verifica el token
@@ -59,28 +76,38 @@ class UserViewSet(ViewSet):
 
             # Si el usuario ya está activo
             if user.is_active:
-                return render(request, 'welcome.html', {
-                    'message': 'El correo ya está confirmado.'
-                })
+                message = {'message': 'El correo ya está confirmado.'}
+                if is_json:
+                    return Response(message, status=status.HTTP_400_BAD_REQUEST)
+                return render(request, 'welcome.html', message)
 
             # Activar al usuario
             user.is_active = True
             user.save()
 
-            send_welcome_email(user)
+            send_welcome_email(user, request)
+            token, _ = Token.objects.get_or_create(user=user)
 
-            return render(request, 'welcome.html', {
-                'message': 'Correo electrónico confirmado exitosamente.'
-            })
+            data = UsuarioSerializer(user).data
+            message = {
+                **data,
+                'token': token.key,
+                'message': 'Correo electrónico confirmado exitosamente.',
+            }
+            if is_json:
+                return Response(message, status=status.HTTP_201_CREATED)
+            return render(request, 'welcome.html', message)
 
         except SignatureExpired:
-            return render(request, 'welcome.html', {
-                'message': 'El enlace de confirmación ha expirado. Solicita un nuevo enlace.'
-            })
+            message = {'message': 'El enlace de confirmación ha expirado. Solicita un nuevo enlace.'}
+            if is_json:
+                return Response(message, status=status.HTTP_400_BAD_REQUEST)
+            return render(request, 'welcome.html', message)
         except (BadSignature, Usuario.DoesNotExist, ValueError):
-            return render(request, 'welcome.html', {
-                'message': 'El enlace de confirmación no es válido.'
-            })
+            message = {'message': 'El enlace de confirmación no es válido.'}
+            if is_json:
+                return Response(message, status=status.HTTP_400_BAD_REQUEST)
+            return render(request, 'welcome.html', message)
 
     @action(detail=False, methods=['put'], url_path='update-profile')
     def update_profile(self, request):

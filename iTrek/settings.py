@@ -154,6 +154,12 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+ADMIN_NAME = os.getenv('ADMIN_NAME', 'Admin')
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@itrek.com')
+ADMINS = (
+    (ADMIN_NAME, ADMIN_EMAIL),
+)
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 465
@@ -163,5 +169,3 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 
 EMAIL_NAME_USER = os.getenv('EMAIL_NAME_USER', '')
 DEFAULT_FROM_EMAIL = f'{EMAIL_NAME_USER} <{EMAIL_HOST_USER}>'
-
-BASE_URL = os.getenv('BASE_URL')

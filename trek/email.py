@@ -19,14 +19,23 @@ class EmailType(Enum):
 executor = ThreadPoolExecutor(max_workers=5)
 
 
-def send_mail(user, email_type, **context):
+
+def get_email_body(user, email_type: EmailType, request=None, **context):
     template_name = f'{email_type.name.lower()}.html'
 
-    context = {
+    c = {
         'user': user,
-        **context,
     }
-    body = render_to_string(template_name, context)
+    if request is not None:
+        base_url = request.build_absolute_uri('/')[:-1].strip('/')
+        c['base_url'] = base_url
+    c.update(context)
+
+    return render_to_string(template_name, c)
+
+
+def send_mail(user, email_type: EmailType, request=None, **context):
+    body = get_email_body(user, email_type, request=request, **context)
 
     mensaje = EmailMessage(
         subject=email_type.value,
@@ -43,15 +52,14 @@ def send_mail(user, email_type, **context):
     executor.submit(mensaje.send)
 
 
-def send_confirmation_email(user):
+def send_confirmation_email(user, request=None):
     signer = TimestampSigner()
     token = signer.sign(user.email)
     encoded_token = urlsafe_base64_encode(force_bytes(token))
-    confirmation_url = reverse('users-confirm-email', args=[encoded_token])
-    full_url = f'{settings.BASE_URL}{confirmation_url}'
+    confirm_url = reverse('users-confirm-email', args=[encoded_token])
 
-    send_mail(user, EmailType.CONFIRM_EMAIL, confirm_url=full_url)
+    send_mail(user, EmailType.CONFIRM_EMAIL, request, confirm_url=confirm_url)
 
 
-def send_welcome_email(user):
-    send_mail(user, EmailType.WELCOME)
+def send_welcome_email(user, request=None):
+    send_mail(user, EmailType.WELCOME, request)

@@ -11,11 +11,15 @@ def create_base_users(apps, schema):
     Usuario.objects.create(
         username='default',
         email='default@itrek.com',
+        first_name='Default',
+        last_name='Itrek',
     )
 
     Usuario.objects.create(
         username='admin',
         email='admin@itrek.com',
+        first_name='Admin',
+        last_name='Itrek',
         password=make_password('1234'),
         is_staff=True,
         is_superuser=True
