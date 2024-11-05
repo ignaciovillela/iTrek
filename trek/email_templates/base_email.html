@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Email de iTrek{% endblock %}</title>
+        <style>
+            /* Estilos generales */
+            body {
+                font-family: Arial, sans-serif;
+                color: #333;
+                line-height: 1.6;
+                background-color: #f4f4f9;
+                margin: 0;
+                padding: 0;
+            }
+
+            .email-container {
+                max-width: 600px;
+                margin: 30px auto;
+                background-color: #ffffff;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+
+            /* Encabezado con fondo verde claro */
+            .email-header {
+                background-color: #e6ffe6;
+                padding: 20px;
+                border-radius: 8px 8px 0 0;
+                text-align: center;
+            }
+
+            /* Imagen de logo centrada */
+            .email-header img {
+                max-width: 200px;
+                height: auto;
+                margin: 0 auto;
+            }
+
+            /* Texto destacado en verde */
+            .highlight {
+                color: green;
+                font-weight: bold;
+            }
+
+            /* Botón de confirmación */
+            .confirm-button {
+                display: inline-block;
+                padding: 12px 24px;
+                background-color: green;
+                color: #ffffff !important;
+                text-decoration: none !important;
+                font-weight: bold;
+                border-radius: 5px;
+                font-size: 16px;
+                text-align: center;
+            }
+
+            .confirm-button:hover {
+                background-color: #004d00;
+            }
+
+            /* Cuerpo del mensaje con espaciado */
+            .email-body {
+                padding: 20px 0;
+                text-align: left;
+            }
+
+            /* Pie de página */
+            .email-footer {
+                text-align: center;
+                font-size: 12px;
+                color: #666;
+                padding-top: 10px;
+                border-top: 1px solid #ddd;
+                margin-top: 20px;
+            }
+
+            .footer-content {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .footer-logo {
+                width: 50px;
+                height: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <!-- Logo de iTrek centrado en la parte superior -->
+            {% block icon %}
+                <img alt="iTrek Logo" src="https://drive.google.com/drive-viewer/AKGpihaf8xw0LJn76AoTsKecmnYSLePhOEeVmtnObjQH-hgy5GULK7yGhg69J_fAXwlzadaFcAylFDIlE9ymoQrTp_c7CPaxelQKZA=w2880-h1392" width="300" />
+            {% endblock %}
+            <div class="email-header">
+
+                <!-- Saludo personalizado debajo del logo -->
+                {% block header %}
+                {% endblock %}
+            </div>
+
+            <!-- Cuerpo del mensaje personalizado -->
+            <div class="email-body">
+                {% block content %}
+                {% endblock %}
+            </div>
+
+            <!-- Pie de página con logo pequeño junto a la despedida -->
+            <div class="email-footer">
+                <div class="footer-content">
+                    <img alt="iTrek Logo" src="https://drive.google.com/drive-viewer/AKGpihaf8xw0LJn76AoTsKecmnYSLePhOEeVmtnObjQH-hgy5GULK7yGhg69J_fAXwlzadaFcAylFDIlE9ymoQrTp_c7CPaxelQKZA=w2880-h1392" class="footer-logo" />
+                    <p>Saludos,<br>El equipo de iTrek</p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

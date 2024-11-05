@@ -1,11 +1,9 @@
-from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 from trek.fields import Base64ImageField
-
-User = get_user_model()
+from user.models import Usuario
 
 
 class ImageMixin:
@@ -26,7 +24,7 @@ class UsuarioSerializer(ImageMixin, serializers.Serializer):
 
     def validate_username(self, value):
         user = self.instance
-        queryset = User.objects.filter(username=value)
+        queryset = Usuario.objects.filter(username=value)
         if user:
             queryset = queryset.exclude(id=user.id)
         if queryset.exists():
@@ -35,7 +33,7 @@ class UsuarioSerializer(ImageMixin, serializers.Serializer):
 
     def validate_email(self, value):
         user = self.instance
-        queryset = User.objects.filter(email=value)
+        queryset = Usuario.objects.filter(email=value)
         if user:
             queryset = queryset.exclude(id=user.id)
         if queryset.exists():
@@ -51,14 +49,15 @@ class UsuarioSerializer(ImageMixin, serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        return User.objects.create_user(
+        return Usuario.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email'),
             password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
             biografia=validated_data.get('biografia', ''),
-            imagen_perfil=validated_data.get('imagen_perfil', None)
+            imagen_perfil=validated_data.get('imagen_perfil', None),
+            is_active=False,
         )
 
     def update(self, instance, validated_data):
@@ -77,5 +76,5 @@ class SearchUsuarioSerializer(ImageMixin, serializers.ModelSerializer):
     fullname = serializers.CharField()
 
     class Meta:
-        model = User
+        model = Usuario
         fields = ['id', 'username', 'fullname', 'imagen_perfil']

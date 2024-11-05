@@ -1,0 +1,20 @@
+{% extends "base_email.html" %}
+
+{% block title %}Confirma tu dirección de correo en iTrek{% endblock %}
+
+{% block header %}
+    <h2>¡Hola <span class="highlight">trekker</span> {{ user.username }}!</h2>
+{% endblock %}
+
+{% block content %}
+    <p>Gracias por unirte a <span class="highlight">iTrek</span>. Para comenzar tu aventura con nosotros, por favor confirma tu correo electrónico haciendo clic en el siguiente botón:</p>
+
+    <p style="text-align: center;">
+        <a href="{{ confirm_url }}" class="confirm-button">Confirma tu cuenta</a>
+    </p>
+
+    <p>El enlace tiene una validez de 24 horas. Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:</p>
+    <p style="word-break: break-all; color: #4CAF50;">{{ confirm_url }}</p>
+
+    <p>Si no solicitaste unirte a iTrek, puedes ignorar este mensaje.</p>
+{% endblock %}

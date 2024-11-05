@@ -1,0 +1,17 @@
+{% extends "base_email.html" %}
+
+{% block title %}Correo Electrónico Confirmado - iTrek{% endblock %}
+
+{% block header %}
+    <h2>¡Gracias, <span class="highlight">trekker</span> {{ user.username }}!</h2>
+{% endblock %}
+
+{% block content %}
+    <p>Tu dirección de correo electrónico ha sido confirmada exitosamente. Ahora puedes disfrutar de todas las funciones de <span class="highlight">iTrek</span> y comenzar tu aventura con nosotros.</p>
+
+    <p>Si tienes alguna pregunta o necesitas ayuda, no dudes en ponerte en contacto con nuestro equipo de soporte.</p>
+
+    <p>¡Nos alegra tenerte a bordo!</p>
+
+    <p>{{ message }}</p>
+{% endblock %}

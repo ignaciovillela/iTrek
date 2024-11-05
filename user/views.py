@@ -1,11 +1,15 @@
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
+from django.shortcuts import render
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from trek.email import send_confirmation_email, send_welcome_email
 from trek.permissions import AllowOnlyAnonymous
 from .models import Usuario
 from .serializers import SearchUsuarioSerializer, UsuarioSerializer
@@ -15,15 +19,17 @@ class UserViewSet(ViewSet):
     """
     ViewSet que maneja la gestión de usuarios:
 
-    - POST   /users/create/          : Crear un nuevo usuario.
-    - PUT    /users/update-profile/  : Actualizar el perfil del usuario autenticado.
-    - PUT    /users/change-password/ : Cambiar la contraseña del usuario autenticado.
-    - DELETE /users/delete-account/  : Eliminar la cuenta del usuario autenticado.
-    - GET    /users/search/          : Buscar usuarios basándose en términos de búsqueda.
+    - POST   /users/create/                : Crear un nuevo usuario.
+    - GET    /users/confirm-email/<token>/ : Confirma el email del nuevo usuario.
+    - PUT    /users/update-profile/        : Actualizar el perfil del usuario autenticado.
+    - PUT    /users/change-password/       : Cambiar la contraseña del usuario autenticado.
+    - DELETE /users/delete-account/        : Eliminar la cuenta del usuario autenticado.
+    - GET    /users/search/                : Buscar usuarios basándose en términos de búsqueda.
     """
 
     def get_permissions(self):
-        if self.action in ['create_user']:
+        print(self.action)
+        if self.action in ['create_user', 'confirm_email']:
             return [AllowOnlyAnonymous()]
         return [IsAuthenticated()]
 
@@ -34,9 +40,47 @@ class UserViewSet(ViewSet):
         """
         serializer = UsuarioSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({**serializer.data, 'message': 'Usuario creado exitosamente.'}, status=status.HTTP_201_CREATED)
+            user = serializer.save()
+            send_confirmation_email(user)
+            return Response({**serializer.data, 'message': 'Usuario creado. Revisa tu email para terminar tu registro'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], url_path='confirm-email/(?P<token>[^/.]+)', name='confirm_email')
+    def confirm_email(self, request, token):
+        """
+        Confirma la dirección de correo electrónico del usuario utilizando el token de confirmación y renderiza una página HTML.
+        """
+        signer = TimestampSigner()
+        try:
+            # Decodifica y verifica el token
+            decoded_token = urlsafe_base64_decode(token).decode()
+            email = signer.unsign(decoded_token, max_age=86400)
+            user = Usuario.all_objects.get(email=email)
+
+            # Si el usuario ya está activo
+            if user.is_active:
+                return render(request, 'welcome.html', {
+                    'message': 'El correo ya está confirmado.'
+                })
+
+            # Activar al usuario
+            user.is_active = True
+            user.save()
+
+            send_welcome_email(user)
+
+            return render(request, 'welcome.html', {
+                'message': 'Correo electrónico confirmado exitosamente.'
+            })
+
+        except SignatureExpired:
+            return render(request, 'welcome.html', {
+                'message': 'El enlace de confirmación ha expirado. Solicita un nuevo enlace.'
+            })
+        except (BadSignature, Usuario.DoesNotExist, ValueError):
+            return render(request, 'welcome.html', {
+                'message': 'El enlace de confirmación no es válido.'
+            })
 
     @action(detail=False, methods=['put'], url_path='update-profile')
     def update_profile(self, request):
