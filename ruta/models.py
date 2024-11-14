@@ -15,7 +15,7 @@ class Ruta(models.Model):
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
     distancia_km = models.FloatField()
-    tiempo_estimado_horas = models.FloatField()
+    tiempo_estimado_minutos = models.IntegerField()
     publica = models.BooleanField(default=True)
     compartida_con = models.ManyToManyField('user.Usuario', through='RutaCompartida', related_name='rutas_compartidas_conmigo', blank=True)
 

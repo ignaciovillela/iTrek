@@ -54,7 +54,7 @@ class RutaBaseSerializer(serializers.ModelSerializer):
         model = Ruta
         fields = [
             'id', 'nombre', 'descripcion', 'dificultad', 'creado_en',
-            'distancia_km', 'tiempo_estimado_horas', 'usuario', 'publica',
+            'distancia_km', 'tiempo_estimado_minutos', 'usuario', 'publica',
         ]
 
 
@@ -68,7 +68,7 @@ class RutaSerializer(RutaBaseSerializer):
             'descripcion': {'allow_blank': True, 'required': False},
             'dificultad': {'allow_blank': True, 'required': False},
             'distancia_km': {'required': False},
-            'tiempo_estimado_horas': {'required': False},
+            'tiempo_estimado_minutos': {'required': False},
         }
 
     def create(self, validated_data):
@@ -87,7 +87,7 @@ class RutaSerializer(RutaBaseSerializer):
             validated_data['dificultad'] = 'facil'
 
         validated_data['distancia_km'] = validated_data.get('distancia_km', 1.0)
-        validated_data['tiempo_estimado_horas'] = validated_data.get('tiempo_estimado_horas', 1.0)
+        validated_data['tiempo_estimado_minutos'] = validated_data.get('tiempo_estimado_minutos', 60)
 
         return Ruta.objects.create(**validated_data)
 

@@ -2,15 +2,18 @@ from django.db import migrations
 
 
 def create_ruta_san_cristobal(apps, schema):
+    User = apps.get_model('user.Usuario')
     Ruta = apps.get_model('ruta.Ruta')
     Punto = apps.get_model('ruta.Punto')
 
+    default_user = User.objects.get(username='default')
     ruta = Ruta.objects.create(
+        usuario=default_user,
         nombre="Ruta por el Cerro San Cristóbal",
         descripcion="Ruta desde la entrada principal del Parque Metropolitano hasta la cumbre del Cerro San Cristóbal.",
         dificultad="moderada",
         distancia_km=5.0,
-        tiempo_estimado_horas=2.0
+        tiempo_estimado_minutos=120
     )
 
     puntos = [

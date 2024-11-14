@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('user', '0002_usuario')
     ]
 
     operations = [
@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('creado_en', models.DateTimeField(auto_now_add=True)),
                 ('actualizado_en', models.DateTimeField(auto_now=True)),
                 ('distancia_km', models.FloatField()),
-                ('tiempo_estimado_horas', models.FloatField()),
+                ('tiempo_estimado_minutos', models.IntegerField()),
                 ('publica', models.BooleanField(default=True)),
                 ('usuario', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='rutas', to=settings.AUTH_USER_MODEL)),
             ],
