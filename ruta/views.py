@@ -6,8 +6,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from user.models import Usuario
-from .models import Puntaje, Ruta
-from .serializers import RutaBaseSerializer, RutaSerializer
+from .models import Comentario, Puntaje, Ruta
+from .serializers import (
+    ComentarioSerializer, RutaBaseSerializer,
+    RutaSerializer,
+)
 
 
 class RutaViewSet(viewsets.ModelViewSet):
@@ -121,3 +124,27 @@ class RutaViewSet(viewsets.ModelViewSet):
         ruta.update_puntaje()
 
         return Response({'message': message, 'mi_puntaje': puntaje_value, 'puntaje': ruta.puntaje}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def comment(self, request, pk=None):
+        ruta = self.get_object()
+
+        comment = request.data.get('comment')
+
+        if not comment:
+            return Response({'error': 'Debes proporcionar un comentario.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        message = 'Comentario registrado con éxito.'
+
+        Comentario.objects.create(
+            usuario=request.user,
+            ruta=ruta,
+            descripcion=comment,
+        )
+        messages = Comentario.objects.filter(
+            usuario=request.user,
+            ruta=ruta,
+        )
+        messages_data = ComentarioSerializer(messages, many=True).data
+
+        return Response({'message': message, 'comentarios': messages_data}, status=status.HTTP_200_OK)

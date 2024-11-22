@@ -19,27 +19,27 @@ class Usuario(AbstractUser):
     NIVELES = {
         1: {
             'nombre': 'Iniciado en Senderismo',
-            'descripcion': "¡Bienvenido al senderismo! Aún no has comenzado tus aventuras. Registra tu primera ruta y empieza a explorar el mundo.",
+            'descripcion': '¡Bienvenido al senderismo! Aún no has comenzado tus aventuras. Registra tu primera ruta y empieza a explorar el mundo.',
             'puntos_min': 0,
         },
         2: {
             'nombre': 'Explorador Principiante',
-            'descripcion': "¡Sigue así! Suma kilómetros y registra más rutas. Estás a {falta_puntos} puntos de convertirte en un Trekker Intermedio.",
+            'descripcion': '¡Sigue así! Suma kilómetros y registra más rutas. Estás a {falta_puntos} puntos de convertirte en un Trekker Intermedio.',
             'puntos_min': 1,
         },
         3: {
             'nombre': 'Trekker Intermedio',
-            'descripcion': "Para alcanzar el nivel Aventurero Experto necesitas seguir explorando rutas más largas o desafiantes. Te faltan {falta_puntos} puntos.",
+            'descripcion': 'Para alcanzar el nivel Aventurero Experto necesitas seguir explorando rutas más largas o desafiantes. Te faltan {falta_puntos} puntos.',
             'puntos_min': 500,
         },
         4: {
             'nombre': 'Aventurero Experto',
-            'descripcion': "¡Increíble trabajo! Estás cerca de convertirte en una Leyenda del Senderismo. Solo te faltan {falta_puntos} puntos. ¡Mantén el ritmo!",
+            'descripcion': '¡Increíble trabajo! Estás cerca de convertirte en una Leyenda del Senderismo. Solo te faltan {falta_puntos} puntos. ¡Mantén el ritmo!',
             'puntos_min': 1000,
         },
         5: {
             'nombre': 'Leyenda del Senderismo',
-            'descripcion': "¡Felicidades! Has alcanzado el nivel máximo. Eres una inspiración para otros exploradores.",
+            'descripcion': '¡Felicidades! Has alcanzado el nivel máximo. Eres una inspiración para otros exploradores.',
             'puntos_min': 2000,
         },
     }
