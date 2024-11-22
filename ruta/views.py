@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from user.models import Usuario
-from .models import Ruta
+from .models import Puntaje, Ruta
 from .serializers import RutaBaseSerializer, RutaSerializer
 
 
@@ -87,3 +87,37 @@ class RutaViewSet(viewsets.ModelViewSet):
 
         ruta.compartida_con.remove(usuario_compartido)
         return Response({'message': 'Ruta dejada de compartir con éxito.'}, status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'])
+    def rate(self, request, pk=None):
+        ruta = self.get_object()
+
+        if 'puntaje' not in request.data:
+            return Response({'error': 'Debes proporcionar un puntaje.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        puntaje_value = request.data.get('puntaje')
+
+        if puntaje_value is None:
+            message = 'Puntaje eliminado con éxito.'
+            Puntaje.objects.filter(
+                usuario=request.user,
+                ruta=ruta,
+            ).delete()
+        else:
+            message = 'Puntaje registrado con éxito.'
+            try:
+                puntaje_value = int(puntaje_value)
+                if not (1 <= puntaje_value <= 5):
+                    return Response({'error': 'El puntaje debe ser entre 1 y 5.'}, status=status.HTTP_400_BAD_REQUEST)
+            except ValueError:
+                return Response({'error': 'El puntaje debe ser un número.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            Puntaje.objects.update_or_create(
+                usuario=request.user,
+                ruta=ruta,
+                defaults={'puntaje': puntaje_value}
+            )
+
+        ruta.update_puntaje()
+
+        return Response({'message': message, 'mi_puntaje': puntaje_value, 'puntaje': ruta.puntaje}, status=status.HTTP_200_OK)

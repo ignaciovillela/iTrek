@@ -2,7 +2,10 @@ from rest_framework import serializers
 
 from trek.fields import Base64ImageField
 from user.serializers import UsuarioSerializer
-from .models import Punto, PuntoInteres, Ruta, RutaCompartida
+from .models import (
+    Comentario, Puntaje, Punto, PuntoInteres, Ruta,
+    RutaCompartida,
+)
 
 
 class PuntoInteresSerializer(serializers.ModelSerializer):
@@ -47,6 +50,21 @@ class PuntoSerializer(serializers.ModelSerializer):
         return instance
 
 
+class PuntajeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Puntaje
+        fields = ['usuario', 'ruta', 'puntaje']
+        read_only_fields = ['usuario', 'ruta']
+
+
+class ComentarioSerializer(serializers.ModelSerializer):
+    usuario = UsuarioSerializer(read_only=True)
+
+    class Meta:
+        model = Comentario
+        fields = ['usuario', 'descripcion']
+
+
 class RutaBaseSerializer(serializers.ModelSerializer):
     usuario = UsuarioSerializer(read_only=True)
 
@@ -55,14 +73,17 @@ class RutaBaseSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'nombre', 'descripcion', 'dificultad', 'creado_en',
             'distancia_km', 'tiempo_estimado_minutos', 'usuario', 'publica',
+            'puntaje',
         ]
 
 
 class RutaSerializer(RutaBaseSerializer):
     puntos = PuntoSerializer(many=True)
+    mi_puntaje = serializers.SerializerMethodField()
+    comentarios = ComentarioSerializer(many=True, read_only=True)
 
     class Meta(RutaBaseSerializer.Meta):
-        fields = RutaBaseSerializer.Meta.fields + ['puntos']
+        fields = RutaBaseSerializer.Meta.fields + ['puntos', 'mi_puntaje', 'comentarios']
         extra_kwargs = {
             'nombre': {'allow_blank': True, 'required': False},
             'descripcion': {'allow_blank': True, 'required': False},
@@ -70,6 +91,11 @@ class RutaSerializer(RutaBaseSerializer):
             'distancia_km': {'required': False},
             'tiempo_estimado_minutos': {'required': False},
         }
+
+    def get_mi_puntaje(self, obj):
+        user = self.context['request'].user
+        puntaje = obj.puntajes.filter(usuario=user).first()
+        return puntaje.puntaje if puntaje else None
 
     def create(self, validated_data):
         puntos_data = validated_data.pop('puntos', [])
