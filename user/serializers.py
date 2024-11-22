@@ -22,6 +22,39 @@ class UsuarioSerializer(ImageMixin, serializers.Serializer):
     biografia = serializers.CharField(required=False, allow_blank=True)
     imagen_perfil = Base64ImageField(required=False, allow_null=True)
 
+    dias_creacion_cuenta = serializers.SerializerMethodField()
+    distancia_trek = serializers.SerializerMethodField()
+    minutos_trek = serializers.SerializerMethodField()
+    puntos_estrellas = serializers.SerializerMethodField()
+    puntos_trek = serializers.SerializerMethodField()
+    nivel = serializers.SerializerMethodField()
+    nombre_nivel = serializers.SerializerMethodField()
+    descripcion_nivel = serializers.SerializerMethodField()
+
+    def get_dias_creacion_cuenta(self, obj):
+        return obj.get_dias_creacion_cuenta()
+
+    def get_distancia_trek(self, obj):
+        return obj.get_distancia_trek()
+
+    def get_minutos_trek(self, obj):
+        return obj.get_minutos_trek()
+
+    def get_puntos_estrellas(self, obj):
+        return obj.get_puntos_estrellas()
+
+    def get_puntos_trek(self, obj):
+        return obj.get_puntos_trek()
+
+    def get_nivel(self, obj):
+        return obj.get_nivel()
+
+    def get_nombre_nivel(self, obj):
+        return obj.get_nombre_nivel()
+
+    def get_descripcion_nivel(self, obj):
+        return obj.get_descripcion_nivel()
+
     def validate_username(self, value):
         user = self.instance
         queryset = Usuario.objects.filter(username=value)
