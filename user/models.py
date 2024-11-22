@@ -19,7 +19,7 @@ class Usuario(AbstractUser):
     NIVELES = {
         1: {
             'nombre': 'Iniciado en Senderismo',
-            'descripcion': '¡Bienvenido al senderismo! Aún no has comenzado tus aventuras. Registra tu primera ruta y empieza a explorar el mundo.',
+            'descripcion': '¡Bienvenido al senderismo! Aún no has comenzado tu aventura. Registra tu primera ruta y empieza a explorar el mundo.',
             'puntos_min': 0,
         },
         2: {
