@@ -25,7 +25,7 @@ class Ruta(models.Model):
         return self.nombre
 
     def get_puntaje(self):
-        return self.puntajes.aggregate(puntaje=Avg('puntaje'))['puntaje'] or 0.0
+        return round(self.puntajes.aggregate(puntaje=Avg('puntaje'))['puntaje'] or 0.0, 1)
 
     def update_puntaje(self):
         self.puntaje = self.get_puntaje()
