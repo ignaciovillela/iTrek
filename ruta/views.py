@@ -141,10 +141,7 @@ class RutaViewSet(viewsets.ModelViewSet):
             ruta=ruta,
             descripcion=comment,
         )
-        messages = Comentario.objects.filter(
-            usuario=request.user,
-            ruta=ruta,
-        ).order_by('-id')
+        messages = ruta.comentarios.order_by('-id')
 
         messages_data = ComentarioSerializer(messages, many=True).data
 
