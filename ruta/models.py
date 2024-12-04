@@ -63,6 +63,10 @@ class Comentario(models.Model):
     usuario = models.ForeignKey('user.Usuario', on_delete=models.CASCADE)
     ruta = models.ForeignKey(Ruta, on_delete=models.CASCADE, related_name='comentarios')
     descripcion = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 class Puntaje(models.Model):

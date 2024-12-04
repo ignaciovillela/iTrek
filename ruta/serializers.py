@@ -62,8 +62,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comentario
-        fields = ['usuario', 'descripcion']
-        order_by = ['-id']
+        fields = ['usuario', 'descripcion', 'created_at']
 
 
 class RutaBaseSerializer(serializers.ModelSerializer):

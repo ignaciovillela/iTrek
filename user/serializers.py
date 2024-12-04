@@ -21,6 +21,7 @@ class UsuarioSerializer(ImageMixin, serializers.Serializer):
     last_name = serializers.CharField(max_length=30, required=False)
     biografia = serializers.CharField(required=False, allow_blank=True)
     imagen_perfil = Base64ImageField(required=False, allow_null=True)
+    is_staff = serializers.BooleanField(read_only=True)
 
     dias_creacion_cuenta = serializers.SerializerMethodField()
     distancia_trek = serializers.SerializerMethodField()

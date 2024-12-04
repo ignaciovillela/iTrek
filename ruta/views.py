@@ -79,10 +79,10 @@ class RutaViewSet(viewsets.ModelViewSet):
     @staticmethod
     def compartir_ruta(ruta, usuario_compartido):
         if usuario_compartido in ruta.compartida_con.all():
-            return Response({'error': 'La ruta ya ha sido compartida con este usuario.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': f'La ruta ya ha sido compartida con {usuario_compartido.username}.'}, status=status.HTTP_400_BAD_REQUEST)
 
         ruta.compartida_con.add(usuario_compartido)
-        return Response({'message': 'Ruta compartida con éxito.'}, status=status.HTTP_201_CREATED)
+        return Response({'message': f'Ruta compartida con éxito con {usuario_compartido.username}.'}, status=status.HTTP_201_CREATED)
 
     @staticmethod
     def dejar_de_compartir_ruta(ruta, usuario_compartido):
@@ -126,27 +126,30 @@ class RutaViewSet(viewsets.ModelViewSet):
 
         return Response({'message': message, 'mi_puntaje': puntaje_value, 'puntaje': ruta.puntaje}, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['get', 'post'])
     def comment(self, request, pk=None):
         ruta = self.get_object()
+
+        if request.method == 'GET':
+            comentarios = ruta.comentarios.all()
+            comentarios_data = ComentarioSerializer(comentarios, many=True).data
+            return Response({'comentarios': comentarios_data}, status=status.HTTP_200_OK)
 
         comment = request.data.get('comment')
 
         if not comment:
             return Response({'error': 'Debes proporcionar un comentario.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        message = 'Comentario registrado con éxito.'
-
         Comentario.objects.create(
             usuario=request.user,
             ruta=ruta,
             descripcion=comment,
         )
-        messages = ruta.comentarios.order_by('-id')
 
-        messages_data = ComentarioSerializer(messages, many=True).data
+        comentarios = ruta.comentarios.all()
+        comentarios_data = ComentarioSerializer(comentarios, many=True).data
 
-        return Response({'message': message, 'comentarios': messages_data}, status=status.HTTP_200_OK)
+        return Response({'message': 'Comentario registrado con éxito.', 'comentarios': comentarios_data}, status=status.HTTP_200_OK)
 
 
 def share(request, route_id):
