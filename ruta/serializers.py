@@ -68,23 +68,28 @@ class ComentarioSerializer(serializers.ModelSerializer):
 
 class RutaBaseSerializer(serializers.ModelSerializer):
     usuario = UsuarioSerializer(read_only=True)
+    mi_puntaje = serializers.SerializerMethodField()
 
     class Meta:
         model = Ruta
         fields = [
             'id', 'nombre', 'descripcion', 'dificultad', 'creado_en',
             'distancia_km', 'tiempo_estimado_minutos', 'usuario', 'publica',
-            'puntaje',
+            'puntaje', 'mi_puntaje',
         ]
+
+    def get_mi_puntaje(self, obj):
+        user = self.context['request'].user
+        puntaje = obj.puntajes.filter(usuario=user).first()
+        return puntaje.puntaje if puntaje else None
 
 
 class RutaSerializer(RutaBaseSerializer):
     puntos = PuntoSerializer(many=True)
-    mi_puntaje = serializers.SerializerMethodField()
     comentarios = ComentarioSerializer(many=True, read_only=True)
 
     class Meta(RutaBaseSerializer.Meta):
-        fields = RutaBaseSerializer.Meta.fields + ['puntos', 'mi_puntaje', 'comentarios']
+        fields = RutaBaseSerializer.Meta.fields + ['puntos', 'comentarios']
         extra_kwargs = {
             'nombre': {'allow_blank': True, 'required': False},
             'descripcion': {'allow_blank': True, 'required': False},
@@ -92,11 +97,6 @@ class RutaSerializer(RutaBaseSerializer):
             'distancia_km': {'required': False},
             'tiempo_estimado_minutos': {'required': False},
         }
-
-    def get_mi_puntaje(self, obj):
-        user = self.context['request'].user
-        puntaje = obj.puntajes.filter(usuario=user).first()
-        return puntaje.puntaje if puntaje else None
 
     def create(self, validated_data):
         puntos_data = validated_data.pop('puntos', [])

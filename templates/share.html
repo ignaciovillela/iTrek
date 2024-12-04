@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Comparte tu aventura</title>
+        {% load static %}
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #385;
+                color: white;
+                text-align: center;
+            }
+            .container {
+                padding: 20px;
+            }
+            header {
+                padding: 20px;
+                background-color: white;
+            }
+            header img {
+                max-width: 150px;
+            }
+            h1 {
+                font-size: 2em;
+                margin-bottom: 20px;
+            }
+            p {
+                font-size: 1.2em;
+                margin-bottom: 30px;
+            }
+            .btn {
+                display: inline-block;
+                padding: 15px 30px;
+                font-size: 1.2em;
+                background-color: white;
+                color: #385;
+                border: 2px solid #385;
+                border-radius: 25px;
+                text-decoration: none;
+                font-weight: bold;
+                transition: background-color 0.3s, color 0.3s;
+            }
+            .btn:hover {
+                background-color: #385;
+                color: white;
+            }
+            .highlight {
+                font-weight: bold;
+                color: #ffda79;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <img src="{% static 'logotipo.png' %}" alt="iTrek Logo">
+        </header>
+        <div class="container">
+            <h1>¡Explora y comparte tu aventura!</h1>
+            <p>
+                Descubre rutas increíbles, vive experiencias inolvidables y comparte tus
+                <span class="highlight">aventuras</span> con quienes más importan.
+            </p>
+            <p><strong>Ruta:</strong> {{ route.nombre }}</p>
+            <p><strong>Descripción:</strong> {{ route.descripcion }}</p>
+            <p><strong>Dificultad:</strong> {{ route.get_dificultad_display }}</p>
+            <p><strong>Distancia:</strong> {{ route.distancia_km }} km</p>
+            <p><strong>Tiempo estimado:</strong> {{ route.tiempo_estimado_minutos }} minutos</p>
+            <a href="intent://open/share/route/{{ route.id }}#Intent;scheme=itrek;package=com.example.itrek;end" class="btn">
+                Abrir en la App
+            </a>
+        </div>
+    </body>
+</html>

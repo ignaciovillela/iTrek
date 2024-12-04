@@ -153,9 +153,22 @@ class UserViewSet(ViewSet):
         Buscar usuarios basándose en los términos de búsqueda proporcionados.
         """
         query = request.query_params.get('q', None)
+        user_id = request.query_params.get('id', None)
 
-        if not query:
+        if not query and not user_id:
             return Response({'error': 'Se requiere un parámetro de búsqueda.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        users = Usuario.objects.annotate(
+            fullname=Concat('first_name', Value(' '), 'last_name')
+        )
+
+        if user_id:
+            try:
+                user = users.get(pk=user_id)
+                serializer = SearchUsuarioSerializer(user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Usuario.DoesNotExist:
+                return Response({'error': 'Usuario no existe'}, status=status.HTTP_400_BAD_REQUEST)
 
         total_characters = len(query.replace(" ", ""))
         if total_characters < 3:
@@ -167,14 +180,12 @@ class UserViewSet(ViewSet):
         for term in search_terms:
             query_filter &= Q(username__icontains=term) | Q(first_name__icontains=term) | Q(last_name__icontains=term)
 
-        usuarios = Usuario.objects.filter(query_filter).exclude(id=request.user.id).annotate(
-            fullname=Concat('first_name', Value(' '), 'last_name')
-        )
+        users = users.filter(query_filter).exclude(id=request.user.id)
 
         if not request.user.is_staff:
-            usuarios = usuarios.exclude(is_staff=True)
+            users = users.exclude(is_staff=True)
         if not request.user.is_superuser:
-            usuarios = usuarios.exclude(is_superuser=True)
+            users = users.exclude(is_superuser=True)
 
-        serializer = SearchUsuarioSerializer(usuarios, many=True)
+        serializer = SearchUsuarioSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

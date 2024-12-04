@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.shortcuts import get_object_or_404, render
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -146,3 +147,16 @@ class RutaViewSet(viewsets.ModelViewSet):
         messages_data = ComentarioSerializer(messages, many=True).data
 
         return Response({'message': message, 'comentarios': messages_data}, status=status.HTTP_200_OK)
+
+
+def share(request, route_id):
+    # Obtiene la ruta o lanza un error 404 si no existe
+    route = get_object_or_404(Ruta, id=route_id)
+
+    # Contexto para pasar información al template
+    context = {
+        'route': route,
+    }
+
+    # Renderiza el template con el contexto
+    return render(request, 'share.html', context)

@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 
 from django.conf import settings
@@ -18,7 +19,7 @@ class Usuario(AbstractUser):
 
     NIVELES = {
         1: {
-            'nombre': 'Iniciado en Senderismo',
+            'nombre': 'Aventurero de sofá',
             'descripcion': '¡Bienvenido al senderismo! Aún no has comenzado tu aventura. Registra tu primera ruta y empieza a explorar el mundo.',
             'puntos_min': 0,
         },
@@ -63,7 +64,10 @@ class Usuario(AbstractUser):
         """
         Calcula la distancia total recorrida por el usuario en kilómetros.
         """
-        return self.rutas.aggregate(total_distancia=Sum('distancia_km'))['total_distancia'] or 0.0
+        distancia = self.rutas.aggregate(total_distancia=Sum('distancia_km'))['total_distancia'] or 0.0
+        if distancia >= 10:
+            distancia = math.floor(distancia)
+        return distancia
 
     def get_minutos_trek(self):
         """
