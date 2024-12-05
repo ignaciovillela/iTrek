@@ -3,8 +3,7 @@ from rest_framework import serializers
 from trek.fields import Base64ImageField
 from user.serializers import UsuarioSerializer
 from .models import (
-    Comentario, Puntaje, Punto, PuntoInteres, Ruta,
-    RutaCompartida,
+    Comentario, Puntaje, Punto, PuntoInteres, Ruta, RutaCompartida,
 )
 
 
@@ -53,7 +52,7 @@ class PuntoSerializer(serializers.ModelSerializer):
 class PuntajeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Puntaje
-        fields = ['usuario', 'ruta', 'puntaje']
+        fields = ['id', 'usuario', 'ruta', 'puntaje']
         read_only_fields = ['usuario', 'ruta']
 
 
@@ -62,7 +61,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comentario
-        fields = ['usuario', 'descripcion', 'created_at']
+        fields = ['id', 'usuario', 'ruta', 'descripcion', 'created_at']
 
 
 class RutaBaseSerializer(serializers.ModelSerializer):
@@ -83,12 +82,32 @@ class RutaBaseSerializer(serializers.ModelSerializer):
         return puntaje.puntaje if puntaje else None
 
 
+class RutaCompartidaSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = RutaCompartida
+        fields = ['ruta', 'usuario']
+
+    def validate(self, data):
+        ruta = data.get('ruta')
+        usuario = data.get('usuario')
+
+        if ruta.usuario == usuario:
+            raise serializers.ValidationError("No puedes compartir la ruta contigo mismo.")
+
+        if RutaCompartida.objects.filter(ruta=ruta, usuario=usuario).exists():
+            raise serializers.ValidationError("La ruta ya ha sido compartida con este usuario.")
+
+        return data
+
+
 class RutaSerializer(RutaBaseSerializer):
     puntos = PuntoSerializer(many=True)
     comentarios = ComentarioSerializer(many=True, read_only=True)
+    compartida_con = RutaCompartidaSerializer(many=True, read_only=True, source='rutacompartida_set')
 
     class Meta(RutaBaseSerializer.Meta):
-        fields = RutaBaseSerializer.Meta.fields + ['puntos', 'comentarios']
+        fields = RutaBaseSerializer.Meta.fields + ['puntos', 'comentarios', 'compartida_con']
         extra_kwargs = {
             'nombre': {'allow_blank': True, 'required': False},
             'descripcion': {'allow_blank': True, 'required': False},
@@ -124,21 +143,3 @@ class RutaSerializer(RutaBaseSerializer):
             punto = Punto.objects.create(ruta=ruta, **punto_data)
             if interes_data:
                 PuntoInteres.objects.create(punto=punto, **interes_data)
-
-
-class RutaCompartidaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RutaCompartida
-        fields = ['ruta', 'usuario']
-
-    def validate(self, data):
-        ruta = data.get('ruta')
-        usuario = data.get('usuario')
-
-        if ruta.usuario == usuario:
-            raise serializers.ValidationError("No puedes compartir la ruta contigo mismo.")
-
-        if RutaCompartida.objects.filter(ruta=ruta, usuario=usuario).exists():
-            raise serializers.ValidationError("La ruta ya ha sido compartida con este usuario.")
-
-        return data

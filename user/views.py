@@ -11,6 +11,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from ruta.models import Ruta, RutaCompartida
+from ruta.serializers import (
+    ComentarioSerializer, PuntajeSerializer, RutaSerializer,
+)
 from trek.email import (
     EmailType, get_email_body, send_confirmation_email,
     send_welcome_email,
@@ -189,3 +193,65 @@ class UserViewSet(ViewSet):
 
         serializer = SearchUsuarioSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='actividad', name='user_activity')
+    def user_activity(self, request):
+        """
+        Endpoint para mostrar la actividad del usuario.
+        Incluye rutas creadas, calificaciones dadas y comentarios realizados.
+        """
+        user: Usuario = request.user
+
+        # Rutas creadas por el usuario
+        rutas = Ruta.objects.filter(usuario=user).prefetch_related('comentarios', 'puntajes')
+
+        # Rutas compartidas con este usuario
+        rutas_compartidas = Ruta.objects.filter(rutacompartida__usuario=user)
+
+        # Comentarios realizados por el usuario
+        comentarios = user.comentario_set.select_related('ruta')
+
+        # Puntajes dados por el usuario
+        puntajes = user.puntaje_set.select_related('ruta')
+
+        # Pasar el contexto al serializador
+        context = {'request': request}
+
+        data = {
+            'rutas_creadas': RutaSerializer(rutas, many=True, context=context).data,
+            'rutas_compartidas': RutaSerializer(rutas_compartidas, many=True, context=context).data,
+            'comentarios': ComentarioSerializer(comentarios, many=True, context=context).data,
+            'puntajes': PuntajeSerializer(puntajes, many=True, context=context).data,
+        }
+
+        return Response(data)
+
+    @action(detail=False, methods=['delete'], url_path='actividad/(?P<_type>\w+)/(?P<pk>\w+)', name='delete_user_activity')
+    def delete_user_activity(self, request, _type=None, pk=None):
+        """
+        Endpoint para eliminar la actividad del usuario.
+        Incluye rutas compartidas, calificaciones dadas y comentarios realizados.
+        """
+        user: Usuario = request.user
+
+        if _type == 'rutas_creadas':
+            user_id = request.GET['user_id']
+            RutaCompartida.objects.filter(
+                ruta_id=pk,
+                usuario_id=user_id,
+            ).delete()
+        elif _type == 'rutas_compartidas':
+            RutaCompartida.objects.filter(
+                ruta_id=pk,
+                usuario=user,
+            ).delete()
+        elif _type == 'comentarios':
+            user.comentario_set.filter(pk=pk).delete()
+        elif _type == 'puntajes':
+            puntaje = user.puntaje_set.filter(id=pk)
+            rutas = Ruta.objects.filter(puntajes__pk=pk)
+            puntaje.delete()
+            for ruta in rutas:
+                ruta.update_puntaje()
+
+        return self.user_activity(request)
