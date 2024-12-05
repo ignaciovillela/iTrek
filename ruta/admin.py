@@ -4,17 +4,54 @@ from django import forms
 from django.contrib import admin
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.safestring import mark_safe
-
+from .models import Punto, Ruta, RutaCompartida, PuntoInteres
 from user.models import Usuario
-from .models import Punto, Ruta, RutaCompartida
 
 
+# Formulario personalizado para Punto
+class PuntoForm(forms.ModelForm):
+    descripcion = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3}), label="Descripción del Punto de Interés")
+    imagen = forms.ImageField(required=False, label="Imagen del Punto de Interés")
+
+    class Meta:
+        model = Punto
+        fields = ['latitud', 'longitud', 'orden']
+
+    def save(self, commit=True):
+        punto = super().save(commit=commit)
+        if not hasattr(punto, 'interes'):
+            PuntoInteres.objects.create(punto=punto)
+        punto.interes.descripcion = self.cleaned_data['descripcion']
+        punto.interes.imagen = self.cleaned_data['imagen']
+        punto.interes.save()
+        return punto
+
+
+# Inline para Punto
+class PuntoInline(admin.TabularInline):
+    model = Punto
+    form = PuntoForm
+    extra = 0
+    fields = ['latitud', 'longitud', 'orden', 'descripcion', 'imagen']
+
+    def descripcion(self, obj):
+        return obj.interes.descripcion if obj and hasattr(obj, 'interes') else None
+
+    def imagen(self, obj):
+        if obj and hasattr(obj, 'interes') and obj.interes.imagen:
+            return mark_safe(f'<a href="{obj.interes.imagen.url}"><img src="{obj.interes.imagen.url}" width="100" height="100" /></a>')
+        return 'No hay imagen'
+
+    descripcion.short_description = "Descripción"
+    imagen.short_description = "Imagen"
+
+
+# Formulario personalizado para Ruta
 class RutaForm(forms.ModelForm):
     class Meta:
         model = Ruta
         fields = '__all__'
 
-    # Definir el widget para el campo ManyToMany
     compartida_con = forms.ModelMultipleChoiceField(
         queryset=Usuario.objects.all(),
         required=False,
@@ -28,23 +65,7 @@ class RutaForm(forms.ModelForm):
         js = ('admin/js/vendor/jquery/jquery.js', 'admin/js/jquery.init.js', 'admin/js/actions.js')
 
 
-class PuntoInline(admin.TabularInline):
-    model = Punto
-    extra = 0
-    fields = ['latitud', 'longitud', 'descripcion', 'imagen']
-    readonly_fields = ('descripcion', 'imagen')
-
-    @staticmethod
-    def descripcion(obj):
-        return obj.interes.descripcion
-
-    @staticmethod
-    def imagen(obj):
-        if obj and obj.interes and obj.interes.imagen:
-            return mark_safe(f'<a href="{obj.interes.imagen.url}"><img src="{obj.interes.imagen.url}" width="100" height="100" /></a>')
-        return 'No hay imagen'
-
-
+# Admin de Ruta
 class RutaAdmin(admin.ModelAdmin):
     inlines = [PuntoInline]
     form = RutaForm
@@ -115,22 +136,24 @@ class RutaAdmin(admin.ModelAdmin):
         return form
 
 
+# Formulario para RutaCompartida
 class RutaCompartidaForm(forms.ModelForm):
     class Meta:
         model = RutaCompartida
         fields = '__all__'
 
-    # En el formulario de RutaCompartida, podemos mostrar el campo ManyToMany como un campo de selección filtrada
     usuario = forms.ModelChoiceField(queryset=Usuario.objects.all())
     ruta = forms.ModelChoiceField(queryset=Ruta.objects.all())
 
 
+# Admin de RutaCompartida
 @admin.register(RutaCompartida)
 class RutaCompartidaAdmin(admin.ModelAdmin):
     form = RutaCompartidaForm
-    list_display = ('ruta', 'usuario')  # Mostramos los campos principales en la lista de admin
-    search_fields = ('ruta__nombre', 'usuario__username')  # Buscamos por el nombre de la ruta o el nombre del usuario
-    list_filter = ('ruta', 'usuario')  # Filtros por ruta y usuario
+    list_display = ('ruta', 'usuario')
+    search_fields = ('ruta__nombre', 'usuario__username')
+    list_filter = ('ruta', 'usuario')
 
 
+# Registrar Ruta
 admin.site.register(Ruta, RutaAdmin)
