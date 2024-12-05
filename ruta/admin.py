@@ -10,15 +10,26 @@ from user.models import Usuario
 
 # Formulario personalizado para Punto
 class PuntoForm(forms.ModelForm):
-    descripcion = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 3}), label="Descripción del Punto de Interés")
+    descripcion = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        label="Descripción del Punto de Interés"
+    )
     imagen = forms.ImageField(required=False, label="Imagen del Punto de Interés")
 
     class Meta:
         model = Punto
         fields = ['latitud', 'longitud', 'orden']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and hasattr(self.instance, 'interes'):
+            self.fields['descripcion'].initial = self.instance.interes.descripcion
+            self.fields['imagen'].initial = self.instance.interes.imagen
+
     def save(self, commit=True):
         punto = super().save(commit=commit)
+        # Asegurarse de que PuntoInteres exista
         if not hasattr(punto, 'interes'):
             PuntoInteres.objects.create(punto=punto)
         punto.interes.descripcion = self.cleaned_data['descripcion']
