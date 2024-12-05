@@ -30,6 +30,10 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://itrek.cl',
+    'https://www.itrek.cl'  # Si usas un subdominio.
+]
 
 # Application definition
 
