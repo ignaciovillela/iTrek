@@ -13,7 +13,8 @@ from rest_framework.viewsets import ViewSet
 
 from ruta.models import Ruta, RutaCompartida
 from ruta.serializers import (
-    ComentarioSerializer, PuntajeSerializer, RutaSerializer,
+    ComentarioRutaSerializer, PuntajeRutaSerializer,
+    RutaConUsuariosSerializer, RutaSerializer,
 )
 from trek.email import (
     EmailType, get_email_body, send_confirmation_email,
@@ -83,35 +84,46 @@ class UserViewSet(ViewSet):
                 message = {'message': 'El correo ya está confirmado.'}
                 if is_json:
                     return Response(message, status=status.HTTP_400_BAD_REQUEST)
-                return render(request, 'welcome.html', message)
+            else:
+                # Activar al usuario
+                user.is_active = True
+                user.save()
 
-            # Activar al usuario
-            user.is_active = True
-            user.save()
+                send_welcome_email(user, request)
+                token, _ = Token.objects.get_or_create(user=user)
 
-            send_welcome_email(user, request)
-            token, _ = Token.objects.get_or_create(user=user)
+                data = UsuarioSerializer(user).data
 
-            data = UsuarioSerializer(user).data
-            message = {
-                **data,
-                'token': token.key,
-                'message': 'Correo electrónico confirmado exitosamente.',
-            }
-            if is_json:
-                return Response(message, status=status.HTTP_201_CREATED)
-            return render(request, 'welcome.html', message)
+                fields = {
+                    'username': data['username'],
+                    'email': data['email'],
+                    'first_name': data['first_name'],
+                    'last_name': data['last_name'],
+                    'biografia': data['biografia'],
+                    'imagen_perfil': data['imagen_perfil'],
+                    'token': token.key,
+                }
+
+                params = '&'.join(f'{name}={value}' for name, value in fields.items())
+
+                message = {
+                    **data,
+                    'token': token.key,
+                    'confirmed_url': f'confirmed/users/email?{params}',
+                    'message': 'Correo electrónico confirmado exitosamente.',
+                }
+                if is_json:
+                    return Response(message, status=status.HTTP_201_CREATED)
 
         except SignatureExpired:
             message = {'message': 'El enlace de confirmación ha expirado. Solicita un nuevo enlace.'}
             if is_json:
                 return Response(message, status=status.HTTP_400_BAD_REQUEST)
-            return render(request, 'welcome.html', message)
         except (BadSignature, Usuario.DoesNotExist, ValueError):
             message = {'message': 'El enlace de confirmación no es válido.'}
             if is_json:
                 return Response(message, status=status.HTTP_400_BAD_REQUEST)
-            return render(request, 'welcome.html', message)
+        return render(request, 'welcome.html', message)
 
     @action(detail=False, methods=['put'], url_path='update-profile')
     def update_profile(self, request):
@@ -218,10 +230,10 @@ class UserViewSet(ViewSet):
         context = {'request': request}
 
         data = {
-            'rutas_creadas': RutaSerializer(rutas, many=True, context=context).data,
+            'rutas_creadas': RutaConUsuariosSerializer(rutas, many=True, context=context).data,
             'rutas_compartidas': RutaSerializer(rutas_compartidas, many=True, context=context).data,
-            'comentarios': ComentarioSerializer(comentarios, many=True, context=context).data,
-            'puntajes': PuntajeSerializer(puntajes, many=True, context=context).data,
+            'comentarios': ComentarioRutaSerializer(comentarios, many=True, context=context).data,
+            'puntajes': PuntajeRutaSerializer(puntajes, many=True, context=context).data,
         }
 
         return Response(data)

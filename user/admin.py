@@ -64,6 +64,13 @@ class UserAdmin(BaseUserAdmin):
 
     list_editable = ('is_staff',)
 
+    def get_queryset(self, request):
+        """
+        Sobrescribe el método para usar all_objects como manager.
+        """
+        queryset = self.model.all_objects.get_queryset()
+        return queryset
+
     def imagen_perfil_thumbnail(self, obj):
         return format_html('<img src="{}" width="30" height="30" style="border-radius:50%;" />', obj.imagen_perfil_url)
 

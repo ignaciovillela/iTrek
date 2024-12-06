@@ -143,3 +143,16 @@ class RutaSerializer(RutaBaseSerializer):
             punto = Punto.objects.create(ruta=ruta, **punto_data)
             if interes_data:
                 PuntoInteres.objects.create(punto=punto, **interes_data)
+
+
+class ComentarioRutaSerializer(ComentarioSerializer):
+    usuario = UsuarioSerializer(read_only=True)
+    ruta = RutaSerializer(read_only=True)
+
+
+class PuntajeRutaSerializer(PuntajeSerializer):
+    ruta = RutaSerializer(read_only=True)
+
+
+class RutaConUsuariosSerializer(RutaSerializer):
+    compartida_con = ComentarioRutaSerializer(many=True, read_only=True, source='rutacompartida_set')
